@@ -14,6 +14,6 @@ pkgbase = ani-stream
 	optdepends = rofi: for rofi-based menu selection
 	optdepends = ani-skip: for skipping intros
 	source = git+https://github.com/aliabdoxd27-source/ani-stream.git#tag=v3.1.1
-	sha256sums = SKIP
+	sha256sums = 91155fd5d234210c6837bede29b4a870a225c2ffc8e093f49561b8a7d8c3da5e
 
 pkgname = ani-stream
