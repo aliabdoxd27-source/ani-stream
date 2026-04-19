@@ -12,7 +12,7 @@ optdepends=('yt-dlp: for HLS stream downloads'
             'aria2: for faster downloads'
             'rofi: for rofi-based menu selection'
             'ani-skip: for skipping intros')
-source=("git+${url}.git#tag=v${pkgver}")
+source=("git+${url}.git#branch=main")
 sha256sums=('91155fd5d234210c6837bede29b4a870a225c2ffc8e093f49561b8a7d8c3da5e')
 
 package() {
