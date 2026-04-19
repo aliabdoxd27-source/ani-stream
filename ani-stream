@@ -5,10 +5,11 @@
 # │                                                                 │
 # └─────────────────────────────────────────────────────────────────┘
 
-VERSION="3.1.0"
+VERSION="3.1.1"
 
 # ─── AllAnime backend ─────────────────────────────────────────────
-AGENT="Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:121.0) Gecko/20100101 Firefox/121.0"
+# FIX: switched to Chromium UA — AllAnime now rejects Firefox UA strings
+AGENT="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
 AA_REFR="https://allmanga.to"
 AA_BASE="allanime.day"
 AA_API="https://api.${AA_BASE}"
@@ -184,6 +185,8 @@ nth() {
 
 # ═══════════════════════════════════════════════════════════════════
 #  AllAnime — search
+#  FIX: switched from GET (--data-urlencode) to POST (JSON body)
+#       AllAnime API now requires POST with Content-Type: application/json
 # ═══════════════════════════════════════════════════════════════════
 search_anime() {
     # Sanitize input for JSON: escape backslashes and double quotes
@@ -191,9 +194,10 @@ search_anime() {
 
     _sgql='query( $search: SearchInput $limit: Int $page: Int $translationType: VaildTranslationTypeEnumType $countryOrigin: VaildCountryOriginEnumType ) { shows( search: $search limit: $limit page: $page translationType: $translationType countryOrigin: $countryOrigin ) { edges { _id name availableEpisodes __typename } }}'
 
-    curl -e "$AA_REFR" -s -G "${AA_API}/api" \
-        --data-urlencode "variables={\"search\":{\"allowAdult\":false,\"allowUnknown\":false,\"query\":\"$_safe_query\"},\"limit\":40,\"page\":1,\"translationType\":\"$mode\",\"countryOrigin\":\"ALL\"}" \
-        --data-urlencode "query=$_sgql" \
+    curl -e "$AA_REFR" -s \
+        -H "Content-Type: application/json" \
+        -X POST "${AA_API}/api" \
+        --data "{\"variables\":{\"search\":{\"allowAdult\":false,\"allowUnknown\":false,\"query\":\"$_safe_query\"},\"limit\":40,\"page\":1,\"translationType\":\"$mode\",\"countryOrigin\":\"ALL\"},\"query\":\"$_sgql\"}" \
         -A "$AGENT" \
     | sed 's|Show|\
 |g' \
@@ -203,13 +207,15 @@ search_anime() {
 
 # ═══════════════════════════════════════════════════════════════════
 #  AllAnime — episode list
+#  FIX: switched from GET to POST
 # ═══════════════════════════════════════════════════════════════════
 episodes_list() {
     _elgql='query ($showId: String!) { show( _id: $showId ) { _id availableEpisodesDetail }}'
 
-    curl -e "$AA_REFR" -s -G "${AA_API}/api" \
-        --data-urlencode "variables={\"showId\":\"$1\"}" \
-        --data-urlencode "query=$_elgql" \
+    curl -e "$AA_REFR" -s \
+        -H "Content-Type: application/json" \
+        -X POST "${AA_API}/api" \
+        --data "{\"variables\":{\"showId\":\"$1\"},\"query\":\"$_elgql\"}" \
         -A "$AGENT" \
     | sed -nE "s|.*${mode}\":\[([0-9.\",]*)\].*|\1|p" \
     | sed 's|,|\
@@ -304,13 +310,15 @@ generate_link() {
 
 # ═══════════════════════════════════════════════════════════════════
 #  AllAnime — collect all source URLs for one episode
+#  FIX: switched from GET to POST
 # ═══════════════════════════════════════════════════════════════════
 get_episode_url() {
     _eegql='query ($showId: String!, $translationType: VaildTranslationTypeEnumType!, $episodeString: String!) { episode( showId: $showId translationType: $translationType episodeString: $episodeString ) { episodeString sourceUrls }}'
 
-    resp=$(curl -e "$AA_REFR" -s -G "${AA_API}/api" \
-        --data-urlencode "variables={\"showId\":\"$id\",\"translationType\":\"$mode\",\"episodeString\":\"$ep_no\"}" \
-        --data-urlencode "query=$_eegql" \
+    resp=$(curl -e "$AA_REFR" -s \
+        -H "Content-Type: application/json" \
+        -X POST "${AA_API}/api" \
+        --data "{\"variables\":{\"showId\":\"$id\",\"translationType\":\"$mode\",\"episodeString\":\"$ep_no\"},\"query\":\"$_eegql\"}" \
         -A "$AGENT" \
         | tr '{}' '\n' \
         | sed 's|\\u002F|/|g;s|\\||g' \
